@@ -1,41 +1,49 @@
-import Foundation
+@preconcurrency import Foundation
 
-struct OpenRouterResponse: Decodable, Sendable {
+struct OpenRouterResponse: Sendable {
     let model: String?
     let choices: [OpenRouterChoice]
 }
+extension OpenRouterResponse: Decodable {}
 
-struct OpenRouterChoice: Decodable, Sendable {
+struct OpenRouterChoice: Sendable {
     let message: OpenRouterMessage
 }
+extension OpenRouterChoice: Decodable {}
 
-struct OpenRouterMessage: Decodable, Sendable {
+struct OpenRouterMessage: Sendable {
     let content: String
 }
+extension OpenRouterMessage: Decodable {}
 
-struct OpenAIResponse: Decodable, Sendable {
+struct OpenAIResponse: Sendable {
     let choices: [OpenAIChoice]
 }
+extension OpenAIResponse: Decodable {}
 
-struct OpenAIChoice: Decodable, Sendable {
+struct OpenAIChoice: Sendable {
     let message: OpenAIMessage
 }
+extension OpenAIChoice: Decodable {}
 
-struct OpenAIMessage: Decodable, Sendable {
+struct OpenAIMessage: Sendable {
     let content: String
 }
+extension OpenAIMessage: Decodable {}
 
-struct OpenAIErrorEnvelope: Decodable, Sendable {
+struct OpenAIErrorEnvelope: Sendable {
     let error: OpenAIErrorBody
 }
+extension OpenAIErrorEnvelope: Decodable {}
 
-struct OpenAIErrorBody: Decodable, Sendable {
+struct OpenAIErrorBody: Sendable {
     let message: String
     let type: String?
     let code: String?
 }
+extension OpenAIErrorBody: Decodable {}
 
-struct HNItem: Decodable, Sendable {
+struct HNItem: Sendable {
     let id: Int
     let type: String?
     let title: String?
@@ -45,12 +53,14 @@ struct HNItem: Decodable, Sendable {
     let score: Int?
     let descendants: Int?
 }
+extension HNItem: Decodable {}
 
-struct HNSearchResponse: Decodable, Sendable {
+struct HNSearchResponse: Sendable {
     let hits: [HNSearchHit]
 }
+extension HNSearchResponse: Decodable {}
 
-struct HNSearchHit: Decodable, Sendable {
+struct HNSearchHit: Sendable {
     let objectID: String
     let title: String?
     let storyTitle: String?
@@ -73,28 +83,34 @@ struct HNSearchHit: Decodable, Sendable {
         case numComments = "num_comments"
     }
 }
+extension HNSearchHit: Decodable {}
 
 // Additional models for WebResearch
-struct GDELTResponse: Decodable, Sendable {
+struct GDELTResponse: Sendable {
     let articles: [GDELTArticle]
 }
+extension GDELTResponse: Decodable {}
 
-struct GDELTArticle: Decodable, Sendable {
+struct GDELTArticle: Sendable {
     let title: String
     let url: String
     let domain: String
 }
+extension GDELTArticle: Decodable {}
 
-struct WikipediaSearchResponse: Decodable, Sendable {
+struct WikipediaSearchResponse: Sendable {
     let query: WikipediaQuery
 }
+extension WikipediaSearchResponse: Decodable {}
 
-struct WikipediaQuery: Decodable, Sendable {
+struct WikipediaQuery: Sendable {
     let search: [WikipediaSearchItem]
 }
+extension WikipediaQuery: Decodable {}
 
-struct WikipediaSearchItem: Decodable, Sendable {
+struct WikipediaSearchItem: Sendable {
     let title: String
     let snippet: String
     let pageid: Int
 }
+extension WikipediaSearchItem: Decodable {}

@@ -1,5 +1,6 @@
 // iPal/ChatHistoryManager.swift
 import Foundation
+import Combine
 
 struct ChatMessage: Codable, Hashable, Identifiable, Sendable {
     let id: UUID
