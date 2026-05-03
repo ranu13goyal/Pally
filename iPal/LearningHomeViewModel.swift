@@ -45,7 +45,8 @@ final class LearningHomeViewModel: ObservableObject {
         isLoading = true
         contentService.fetchDailyCards(for: profileManager.profile) { [weak self] cards in
             guard let self else { return }
-            self.cards = cards
+            // Filter out already read cards
+            self.cards = cards.filter { !self.profileManager.profile.readCardIDs.contains($0.id) }
             self.weeklySummary = self.profileManager.weeklySummary(from: cards)
             self.isLoading = false
         }

@@ -99,17 +99,9 @@ private extension LearningCardView {
     }
     
     var feedbackBar: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                quickAction("Like", icon: "hand.thumbsup", action: .like)
-                quickAction("Dislike", icon: "hand.thumbsdown", action: .dislike)
-                quickAction("Quiz me", icon: "questionmark.circle", action: .quizMe)
-            }
-            
-            HStack(spacing: 10) {
-                quickAction("Too basic", icon: "arrow.down.circle", action: .tooBasic)
-                quickAction("Too complex", icon: "arrow.up.circle", action: .tooComplex)
-            }
+        HStack(spacing: 10) {
+            quickAction("Like", icon: "hand.thumbsup", action: .like)
+            quickAction("Dislike", icon: "hand.thumbsdown", action: .dislike)
         }
     }
     
