@@ -13,31 +13,37 @@ struct ExploreMoreView: View {
         NavigationView {
             VStack(spacing: 0) {
                 // Card Context Header
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text(card.title)
-                        .font(.headline)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .fontDesign(.serif)
+                        .inkText()
+                    
                     Text(card.keyConceptTitle)
                         .font(.subheadline)
+                        .fontDesign(.serif)
                         .foregroundColor(.secondary)
                 }
-                .padding()
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.secondarySystemBackground))
+                
+                Divider()
                 
                 // Chat Area
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 24) {
                         let messages = historyManager.messages(for: card.id)
                         
                         if messages.isEmpty {
-                            VStack(spacing: 12) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.orange.opacity(0.8))
+                            VStack(spacing: 16) {
                                 Text("Ask anything about \(card.title) to dive deeper.")
-                                    .font(.subheadline)
+                                    .font(.body)
+                                    .fontDesign(.serif)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
+                                    .lineSpacing(6)
                             }
                             .padding(.top, 60)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -49,54 +55,72 @@ struct ExploreMoreView: View {
                             if isTyping {
                                 HStack {
                                     ProgressView()
-                                        .padding(.trailing, 4)
-                                    Text("iPal is thinking...")
+                                        .padding(.trailing, 8)
+                                    Text("Thinking...")
                                         .font(.caption)
+                                        .fontDesign(.serif)
                                         .foregroundColor(.secondary)
                                 }
-                                .padding(.horizontal)
+                                .padding(.horizontal, 24)
                             }
                             
                             if let error = errorMessage {
                                 Text(error)
                                     .font(.caption)
+                                    .fontDesign(.serif)
                                     .foregroundColor(.red)
-                                    .padding(.horizontal)
-                                    .padding(.top, 4)
+                                    .padding(.horizontal, 24)
+                                    .padding(.top, 8)
                             }
                         }
                     }
-                    .padding()
+                    .padding(.vertical, 24)
                 }
                 
                 Divider()
                 
                 // Chat Input
                 HStack(spacing: 12) {
-                    TextField("Ask about \(card.title)...", text: $chatInput)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    TextField("Ask a question...", text: $chatInput)
+                        .fontDesign(.serif)
+                        .textFieldStyle(.plain)
+                        .padding(12)
+                        .background(Color(.systemBackground).opacity(0.5))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                        )
                     
                     Button(action: sendMessage) {
                         if isTyping {
                             ProgressView()
                                 .scaleEffect(0.8)
+                                .frame(width: 44, height: 44)
                         } else {
-                            Image(systemName: "paperplane.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.blue)
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 16, weight: .bold))
+                                .frame(width: 44, height: 44)
+                                .background(chatInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.secondary.opacity(0.3) : Color.primary)
+                                .foregroundColor(Color(.systemBackground))
+                                .clipShape(Circle())
                         }
                     }
                     .disabled(chatInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTyping)
                 }
-                .padding()
+                .padding(16)
             }
-            .navigationTitle("Explore More")
+            .paperBackground()
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }
+                    .fontDesign(.sans)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 }
             }
         }
@@ -106,7 +130,6 @@ struct ExploreMoreView: View {
         let trimmedInput = chatInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInput.isEmpty else { return }
         
-        // Save user message
         errorMessage = nil
         historyManager.saveMessage(trimmedInput, isUser: true, for: card.id)
         
@@ -114,7 +137,6 @@ struct ExploreMoreView: View {
         isTyping = true
         
         let messagesToSend = historyManager.messages(for: card.id)
-        // Map current messages for AI service
         let aiMessages = messagesToSend.map { $0.isUser ? "You: \($0.text)" : "iPal: \($0.text)" }
         
         aiService.generateChatResponse(card: card, messages: aiMessages) { response, success in
@@ -134,17 +156,25 @@ struct MessageBubble: View {
     var body: some View {
         HStack {
             if message.isUser {
-                Spacer()
-            }
-            
-            Text(message.text)
-                .padding(12)
-                .background(message.isUser ? Color.blue : Color(.systemGray5))
-                .foregroundColor(message.isUser ? .white : .primary)
-                .cornerRadius(16)
-            
-            if !message.isUser {
-                Spacer()
+                Spacer(minLength: 40)
+                Text(message.text)
+                    .font(.body)
+                    .fontDesign(.serif)
+                    .lineSpacing(6)
+                    .padding(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 24)
+            } else {
+                Text(message.text)
+                    .font(.body)
+                    .fontDesign(.serif)
+                    .lineSpacing(8)
+                    .inkText()
+                    .padding(.horizontal, 24)
+                Spacer(minLength: 40)
             }
         }
     }
