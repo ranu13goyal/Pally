@@ -27,6 +27,7 @@ final class CardStorageManager {
     
     func appendCard(_ card: SummaryCard) {
         var current = getAllCards()
+        guard !current.contains(where: { $0.title.lowercased() == card.title.lowercased() }) else { return }
         current.append(card)
         saveCards(current)
     }

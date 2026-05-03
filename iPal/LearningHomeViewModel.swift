@@ -13,6 +13,8 @@ final class LearningHomeViewModel: ObservableObject {
     @Published var deepDiveStatusMessage: String?
     @Published var searchedCard: SummaryCard?
     
+    private var cancellables = Set<AnyCancellable>()
+    
     let profileManager: UserProfileManager
     let questionManager: LearningQuestionManager
     private let contentService: LearningContentService
@@ -26,6 +28,11 @@ final class LearningHomeViewModel: ObservableObject {
         self.contentService = LearningContentService()
         self.aiService = AIService()
         self.storyManager = StoryManager()
+        
+        profileManager.objectWillChange
+            .sink { [weak self] in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+            
         loadDailyCards()
     }
     
@@ -41,6 +48,11 @@ final class LearningHomeViewModel: ObservableObject {
         self.contentService = contentService
         self.aiService = aiService
         self.storyManager = storyManager
+        
+        profileManager.objectWillChange
+            .sink { [weak self] in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+            
         loadDailyCards()
     }
     
@@ -135,6 +147,9 @@ extension LearningHomeViewModel {
         isLoading = true
         aiService.generateLearningCard(query: query) { card, _ in
             self.isLoading = false
+            if let generatedCard = card {
+                CardStorageManager.shared.appendCard(generatedCard)
+            }
             completion(card)
         }
     }

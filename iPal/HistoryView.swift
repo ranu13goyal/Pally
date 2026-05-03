@@ -7,7 +7,7 @@ struct HistoryView: View {
     // We'll need access to all known cards to map IDs back to objects
     // In a real app, this would be a local database.
     private var allKnownCards: [SummaryCard] {
-        LearningMockData.cards // For now, only mock cards are supported in history
+        CardStorageManager.shared.getAllCards() + LearningMockData.cards
     }
     
     var body: some View {

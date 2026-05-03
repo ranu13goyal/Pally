@@ -3,7 +3,7 @@ import SwiftUI
 struct ExploreMoreView: View {
     let card: SummaryCard
     @State private var chatInput: String = ""
-    @State private var messages: [ChatMessage] = [] 
+    @ObservedObject var historyManager = ChatHistoryManager.shared
     @State private var isTyping = false
     @State private var errorMessage: String?
     @Environment(\.dismiss) var dismiss
@@ -27,6 +27,8 @@ struct ExploreMoreView: View {
                 // Chat Area
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
+                        let messages = historyManager.messages(for: card.id)
+                        
                         if messages.isEmpty {
                             VStack(spacing: 12) {
                                 Image(systemName: "sparkles")
@@ -97,9 +99,6 @@ struct ExploreMoreView: View {
                     }
                 }
             }
-            .onAppear {
-                messages = ChatHistoryManager.shared.messages(for: card.id)
-            }
         }
     }
     
@@ -109,20 +108,19 @@ struct ExploreMoreView: View {
         
         // Save user message
         errorMessage = nil
-        ChatHistoryManager.shared.saveMessage(trimmedInput, isUser: true, for: card.id)
-        messages = ChatHistoryManager.shared.messages(for: card.id)
+        historyManager.saveMessage(trimmedInput, isUser: true, for: card.id)
         
         chatInput = ""
         isTyping = true
         
+        let messagesToSend = historyManager.messages(for: card.id)
         // Map current messages for AI service
-        let aiMessages = messages.map { $0.isUser ? "You: \($0.text)" : "iPal: \($0.text)" }
+        let aiMessages = messagesToSend.map { $0.isUser ? "You: \($0.text)" : "iPal: \($0.text)" }
         
         aiService.generateChatResponse(card: card, messages: aiMessages) { response, success in
             isTyping = false
             if success {
-                ChatHistoryManager.shared.saveMessage(response, isUser: false, for: card.id)
-                messages = ChatHistoryManager.shared.messages(for: card.id)
+                historyManager.saveMessage(response, isUser: false, for: card.id)
             } else {
                 errorMessage = response
             }

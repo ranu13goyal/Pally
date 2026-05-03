@@ -25,7 +25,7 @@ final class ContentGenerationService: ObservableObject {
         // Randomly pick between Trending and Evergreen
         let mode = Bool.random() ? "trending latest development" : "evergreen foundational concept"
         let interests = profile.preferredTopicWeights.keys.joined(separator: ", ")
-        let prompt = "Generate a \(mode) related to one of these interests: \(interests). Ensure it is diverse and unique. Return valid JSON only."
+        let prompt = "Generate a \(mode) related to one of these interests: \(interests). Ensure it is diverse and unique. Random Seed: \(UUID().uuidString). Return valid JSON only."
         
         aiService.generateLearningCard(query: prompt) { [weak self] card, success in
             guard let self else { return }

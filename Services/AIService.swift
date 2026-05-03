@@ -5,9 +5,7 @@ final class AIService {
     private let groqEndpoint = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
     private let groqModel = "llama-3.3-70b-versatile"
     
-    // Max retries for API calls
     private let maxRetries = 3
-    // Initial delay for exponential backoff
     private let initialDelay = 1.0
     
     private var openRouterKey: String {
@@ -27,7 +25,6 @@ final class AIService {
         return key
     }
     
-    // Generic request performer with retry logic
     private func performRequest(
         request: URLRequest,
         retries: Int,
@@ -37,7 +34,6 @@ final class AIService {
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 let nsError = error as NSError
-                // Retry on timeouts or connection issues
                 if retries > 0 && (nsError.code == NSURLErrorTimedOut || nsError.code == NSURLErrorNotConnectedToInternet || nsError.code == NSURLErrorNetworkConnectionLost) {
                     print("Retrying request after \(delay)s for error: \(error.localizedDescription)")
                     DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
@@ -110,7 +106,7 @@ final class AIService {
         
         var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 60 // Increased timeout
+        request.timeoutInterval = 60
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
@@ -123,8 +119,7 @@ final class AIService {
         Card Key Concept: \(card.keyConceptTitle)
         Card Key Concept Explanation: \(card.keyConceptExplanation)
         Card Summary:
-        \(card.bulletSummary.joined(separator: "
-"))
+        \(card.bulletSummary.joined(separator: "\n"))
         
         Be concise, helpful, and encouraging. Stay focused on the topic of the card but feel free to expand on related concepts if asked.
         """
@@ -161,14 +156,14 @@ final class AIService {
             if let error = error {
                 print("Chat request network error: \(error.localizedDescription)")
                 let errorMessage: String
-                if let urlError = error as? URLError, urlError.code == .timedOut {
+                let nsError = error as NSError
+                if nsError.code == NSURLErrorTimedOut {
                     errorMessage = "Request timed out. Please check your internet connection or try again."
-                } else if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
+                } else if nsError.code == NSURLErrorNotConnectedToInternet {
                     errorMessage = "Not connected to the internet. Please check your network."
-                } else if let urlError = error as? URLError, urlError.code == .networkConnectionLost {
+                } else if nsError.code == NSURLErrorNetworkConnectionLost {
                     errorMessage = "Network connection lost. Please try again."
-                }
-                else {
+                } else {
                     errorMessage = "Connection error: \(error.localizedDescription)"
                 }
                 DispatchQueue.main.async { completion(errorMessage, false) }
@@ -216,7 +211,7 @@ final class AIService {
         
         var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 75 // Increased timeout
+        request.timeoutInterval = 45
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
@@ -260,17 +255,6 @@ final class AIService {
         performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
             if let error = error {
                 print("Generate card network error: \(error.localizedDescription)")
-                let errorMessage: String
-                if let urlError = error as? URLError, urlError.code == .timedOut {
-                    errorMessage = "Request timed out. Please check your internet connection or try again."
-                } else if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
-                    errorMessage = "Not connected to the internet. Please check your network."
-                } else if let urlError = error as? URLError, urlError.code == .networkConnectionLost {
-                    errorMessage = "Network connection lost. Please try again."
-                }
-                else {
-                    errorMessage = "Connection error: \(error.localizedDescription)"
-                }
                 DispatchQueue.main.async { completion(nil, false) }
                 return
             }
@@ -479,13 +463,14 @@ final class AIService {
         performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
             if let error = error {
                 print("Groq request error:", error.localizedDescription)
-                if let urlError = error as? URLError, urlError.code == .timedOut {
+                let nsError = error as NSError
+                if nsError.code == NSURLErrorTimedOut {
                     DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Request timed out", false) }
                     return
-                } else if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
+                } else if nsError.code == NSURLErrorNotConnectedToInternet {
                     DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Not connected to internet", false) }
                     return
-                } else if let urlError = error as? URLError, urlError.code == .networkConnectionLost {
+                } else if nsError.code == NSURLErrorNetworkConnectionLost {
                     DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Network connection lost", false) }
                     return
                 }
@@ -545,7 +530,7 @@ final class AIService {
         
         var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 75 // Increased timeout
+        request.timeoutInterval = 40
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
@@ -563,8 +548,7 @@ final class AIService {
         
         let citedSources = sourceReferences.prefix(6).map {
             "\($0.sourceName): \($0.title) (\($0.url))"
-        }.joined(separator: "
-")
+        }.joined(separator: "\n")
         
         let guidance = extraGuidance?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
             ? extraGuidance!
@@ -647,14 +631,14 @@ final class AIService {
             if let error = error {
                 print("Story research request error: \(error.localizedDescription)")
                 let errorMessage: String
-                if let urlError = error as? URLError, urlError.code == .timedOut {
+                let nsError = error as NSError
+                if nsError.code == NSURLErrorTimedOut {
                     errorMessage = "Request timed out. Please check your internet connection or try again."
-                } else if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
+                } else if nsError.code == NSURLErrorNotConnectedToInternet {
                     errorMessage = "Not connected to the internet. Please check your network."
-                } else if let urlError = error as? URLError, urlError.code == .networkConnectionLost {
+                } else if nsError.code == NSURLErrorNetworkConnectionLost {
                     errorMessage = "Network connection lost. Please try again."
-                }
-                else {
+                } else {
                     errorMessage = "Connection error: \(error.localizedDescription)"
                 }
                 DispatchQueue.main.async {
@@ -706,6 +690,7 @@ final class AIService {
                 }
             }
         }
+    }
     
     private func callStoryThemeGeneration(
         userPrompt: String,
@@ -720,7 +705,7 @@ final class AIService {
         
         var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 40 // Increased timeout
+        request.timeoutInterval = 20
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
@@ -755,7 +740,26 @@ final class AIService {
         }
         
         performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
-            guard let data else {
+            if let error = error {
+                print("Story theme request error: \(error.localizedDescription)")
+                let errorMessage: String
+                let nsError = error as NSError
+                if nsError.code == NSURLErrorTimedOut {
+                    errorMessage = "Request timed out."
+                } else if nsError.code == NSURLErrorNotConnectedToInternet {
+                    errorMessage = "Not connected to the internet."
+                } else if nsError.code == NSURLErrorNetworkConnectionLost {
+                    errorMessage = "Network connection lost."
+                } else {
+                    errorMessage = "Connection error: \(error.localizedDescription)"
+                }
+                DispatchQueue.main.async {
+                    completion(self.fallbackStoryTheme(from: userPrompt), "Fallback: \(errorMessage)", false)
+                }
+                return
+            }
+            
+            guard let data = data else {
                 DispatchQueue.main.async {
                     completion(self.fallbackStoryTheme(from: userPrompt), "Fallback", false)
                 }
@@ -783,6 +787,7 @@ final class AIService {
                 }
             }
         }
+    }
     
     private func extractBullets(from text: String) -> [String] {
         let lines = text
@@ -837,7 +842,7 @@ final class AIService {
             .joined(separator: " ")
             .replacingOccurrences(of: "&nbsp;", with: " ")
             .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
         let sentences = cleaned
@@ -901,15 +906,15 @@ final class AIService {
         }
         
         return rawValue
-            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     private func normalizeComparisonText(_ text: String) -> String {
         text
             .lowercased()
-            .replacingOccurrences(of: "[^a-z0-9\s]", with: " ", options: .regularExpression)
-            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "[^a-z0-9\\s]", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
@@ -991,10 +996,10 @@ final class AIService {
     
     private func cleanTheme(_ rawTheme: String, fallbackPrompt: String) -> String {
         let stripped = rawTheme
-            .replacingOccurrences(of: """, with: "")
+            .replacingOccurrences(of: "\"", with: "")
             .replacingOccurrences(of: "`", with: "")
-            .replacingOccurrences(of: "(?i)\b(layman|beginner|explain|explained|tell me about|what is|about)\b", with: " ", options: .regularExpression)
-            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)\\b(layman|beginner|explain|explained|tell me about|what is|about)\\b", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
         if stripped.isEmpty {
@@ -1014,7 +1019,7 @@ final class AIService {
         
         let tokens = userPrompt
             .lowercased()
-            .replacingOccurrences(of: "[^a-z0-9\s-]", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "[^a-z0-9\\s-]", with: " ", options: .regularExpression)
             .split(separator: " ")
             .map(String.init)
             .filter { !$0.isEmpty && !stopWords.contains($0) }
@@ -1034,7 +1039,7 @@ final class AIService {
     
     private func normalizeThemeCandidate(_ candidate: String) -> String {
         let cleaned = candidate
-            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
         let lowered = cleaned.lowercased()
