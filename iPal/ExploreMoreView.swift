@@ -3,7 +3,7 @@ import SwiftUI
 struct ExploreMoreView: View {
     let card: SummaryCard
     @State private var chatInput: String = ""
-    @State private var messages: [String] = [] 
+    @State private var messages: [ChatMessage] = [] 
     @State private var isTyping = false
     @Environment(\.dismiss) var dismiss
     private let aiService = AIService()
@@ -39,8 +39,8 @@ struct ExploreMoreView: View {
                             .padding(.top, 60)
                             .frame(maxWidth: .infinity, alignment: .center)
                         } else {
-                            ForEach(messages, id: \.self) { message in
-                                MessageBubble(text: message)
+                            ForEach(messages) { message in
+                                MessageBubble(message: message)
                             }
                             
                             if isTyping {
@@ -88,6 +88,9 @@ struct ExploreMoreView: View {
                     }
                 }
             }
+            .onAppear {
+                messages = ChatHistoryManager.shared.messages(for: card.id)
+            }
         }
     }
     
@@ -95,33 +98,42 @@ struct ExploreMoreView: View {
         let trimmedInput = chatInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInput.isEmpty else { return }
         
-        messages.append("You: \(trimmedInput)")
+        // Save user message
+        ChatHistoryManager.shared.saveMessage(trimmedInput, isUser: true, for: card.id)
+        messages = ChatHistoryManager.shared.messages(for: card.id)
+        
         chatInput = ""
         isTyping = true
         
-        aiService.generateChatResponse(card: card, messages: messages) { response, success in
+        // Map current messages for AI service
+        let aiMessages = messages.map { $0.isUser ? "You: \($0.text)" : "iPal: \($0.text)" }
+        
+        aiService.generateChatResponse(card: card, messages: aiMessages) { response, success in
             isTyping = false
-            messages.append("iPal: \(response)")
+            if success {
+                ChatHistoryManager.shared.saveMessage(response, isUser: false, for: card.id)
+                messages = ChatHistoryManager.shared.messages(for: card.id)
+            }
         }
     }
 }
 
 struct MessageBubble: View {
-    let text: String
+    let message: ChatMessage
     
     var body: some View {
         HStack {
-            if text.hasPrefix("You:") {
+            if message.isUser {
                 Spacer()
             }
             
-            Text(text.replacingOccurrences(of: "You: ", with: "").replacingOccurrences(of: "iPal: ", with: ""))
+            Text(message.text)
                 .padding(12)
-                .background(text.hasPrefix("You:") ? Color.blue : Color(.systemGray5))
-                .foregroundColor(text.hasPrefix("You:") ? .white : .primary)
+                .background(message.isUser ? Color.blue : Color(.systemGray5))
+                .foregroundColor(message.isUser ? .white : .primary)
                 .cornerRadius(16)
             
-            if text.hasPrefix("iPal:") {
+            if !message.isUser {
                 Spacer()
             }
         }
