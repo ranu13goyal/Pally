@@ -5,6 +5,11 @@ final class AIService {
     private let groqEndpoint = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
     private let groqModel = "llama-3.3-70b-versatile"
     
+    // Max retries for API calls
+    private let maxRetries = 3
+    // Initial delay for exponential backoff
+    private let initialDelay = 1.0
+    
     private var openRouterKey: String {
         fetchKey(named: "OpenRouterKey")
     }
@@ -20,6 +25,31 @@ final class AIService {
             return "REDACTED"
         }
         return key
+    }
+    
+    // Generic request performer with retry logic
+    private func performRequest(
+        request: URLRequest,
+        retries: Int,
+        delay: TimeInterval,
+        completion: @escaping (Data?, URLResponse?, Error?) -> Void
+    ) {
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                let nsError = error as NSError
+                // Retry on timeouts or connection issues
+                if retries > 0 && (nsError.code == NSURLErrorTimedOut || nsError.code == NSURLErrorNotConnectedToInternet || nsError.code == NSURLErrorNetworkConnectionLost) {
+                    print("Retrying request after \(delay)s for error: \(error.localizedDescription)")
+                    DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
+                        self.performRequest(request: request, retries: retries - 1, delay: delay * 2, completion: completion)
+                    }
+                } else {
+                    completion(data, response, error)
+                }
+            } else {
+                completion(data, response, nil)
+            }
+        }.resume()
     }
     
     // MARK: - Public
@@ -126,13 +156,18 @@ final class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
             if let error = error {
                 print("Chat request network error: \(error.localizedDescription)")
                 let errorMessage: String
                 if let urlError = error as? URLError, urlError.code == .timedOut {
                     errorMessage = "Request timed out. Please check your internet connection or try again."
-                } else {
+                } else if urlError?.code == NSURLErrorNotConnectedToInternet {
+                    errorMessage = "Not connected to the internet. Please check your network."
+                } else if urlError?.code == NSURLErrorNetworkConnectionLost {
+                    errorMessage = "Network connection lost. Please try again."
+                }
+                else {
                     errorMessage = "Connection error: \(error.localizedDescription)"
                 }
                 DispatchQueue.main.async { completion(errorMessage, false) }
@@ -164,7 +199,7 @@ final class AIService {
                     completion("I received an unexpected response structure. Please try again.", false)
                 }
             }
-        }.resume()
+        }
     }
     
     func generateLearningCard(
@@ -221,15 +256,9 @@ final class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
             if let error = error {
                 print("Generate card network error: \(error.localizedDescription)")
-                let errorMessage: String
-                if let urlError = error as? URLError, urlError.code == .timedOut {
-                    errorMessage = "Request timed out. Please check your internet connection or try again."
-                } else {
-                    errorMessage = "Connection error: \(error.localizedDescription)"
-                }
                 DispatchQueue.main.async { completion(nil, false) }
                 return
             }
@@ -241,6 +270,15 @@ final class AIService {
             }
             
             do {
+                if let apiError = try? JSONDecoder().decode(OpenAIErrorEnvelope.self, from: data) {
+                    print("Generate card API Error: \(apiError.error.message)")
+                    DispatchQueue.main.async {
+                        // For card generation, just return nil on API error and let fallback handle it
+                        completion(nil, false)
+                    }
+                    return
+                }
+                
                 let decoded = try JSONDecoder().decode(OpenAIResponse.self, from: data)
                 let rawContent = decoded.choices.first?.message.content ?? ""
                 
@@ -269,7 +307,7 @@ final class AIService {
                 print("Generate card decode error: \(error)")
                 DispatchQueue.main.async { completion(nil, false) }
             }
-        }.resume()
+        }
     }
     
     private struct SummaryCardStub: Decodable, Sendable {
@@ -426,11 +464,17 @@ final class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
             if let error = error {
                 print("Groq request error:", error.localizedDescription)
                 if let urlError = error as? URLError, urlError.code == .timedOut {
                     DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Request timed out", false) }
+                    return
+                } else if urlError?.code == NSURLErrorNotConnectedToInternet {
+                    DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Not connected to internet", false) }
+                    return
+                } else if urlError?.code == NSURLErrorNetworkConnectionLost {
+                    DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Network connection lost", false) }
                     return
                 }
             }
@@ -466,7 +510,7 @@ final class AIService {
                     completion(self.fallbackBullets(from: input), "Fallback: decode failed", false)
                 }
             }
-        }.resume()
+        }
     }
     
     // MARK: - Helpers
@@ -586,9 +630,24 @@ final class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, _, error in
+        performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
             if let error = error {
                 print("Story research request error: \(error.localizedDescription)")
+                let errorMessage: String
+                if let urlError = error as? URLError, urlError.code == .timedOut {
+                    errorMessage = "Request timed out. Please check your internet connection or try again."
+                } else if urlError?.code == NSURLErrorNotConnectedToInternet {
+                    errorMessage = "Not connected to the internet. Please check your network."
+                } else if urlError?.code == NSURLErrorNetworkConnectionLost {
+                    errorMessage = "Network connection lost. Please try again."
+                }
+                else {
+                    errorMessage = "Connection error: \(error.localizedDescription)"
+                }
+                DispatchQueue.main.async {
+                    completion(self.fallbackStoryPayload(topic: topic, userPrompt: userPrompt, from: researchInput, sourceReferences: sourceReferences, existingStory: existingStory), "Fallback: \(errorMessage)", false)
+                }
+                return
             }
             
             guard let data = data else {
@@ -633,8 +692,7 @@ final class AIService {
                     )
                 }
             }
-        }.resume()
-    }
+        }
     
     private func callStoryThemeGeneration(
         userPrompt: String,
@@ -683,7 +741,7 @@ final class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, _, _ in
+        performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
             guard let data else {
                 DispatchQueue.main.async {
                     completion(self.fallbackStoryTheme(from: userPrompt), "Fallback", false)
@@ -711,8 +769,7 @@ final class AIService {
                     completion(self.fallbackStoryTheme(from: userPrompt), "Fallback: decode failed", false)
                 }
             }
-        }.resume()
-    }
+        }
     
     private func extractBullets(from text: String) -> [String] {
         let lines = text
