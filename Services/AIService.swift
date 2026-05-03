@@ -2,8 +2,22 @@ import Foundation
 
 final class AIService {
     
-    private let openRouterKey = "REDACTED"
-    private let openAIKey = "REDACTED"
+    private var openRouterKey: String {
+        fetchKey(named: "OpenRouterKey")
+    }
+    
+    private var openAIKey: String {
+        fetchKey(named: "OpenAIKey")
+    }
+    
+    private func fetchKey(named name: String) -> String {
+        guard let path = Bundle.main.path(forResource: "Keys", ofType: "plist"),
+              let dict = NSDictionary(contentsOfFile: path) as? [String: String],
+              let key = dict[name] else {
+            return "REDACTED"
+        }
+        return key
+    }
     
     // MARK: - Public
     
