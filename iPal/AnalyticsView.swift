@@ -120,14 +120,15 @@ struct TopicRow: View {
             }
             
             GeometryReader { geo in
-                Z courier in
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 8)
-                
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(score >= 1.0 ? Color.blue : Color.orange)
-                    .frame(width: geo.size.width * CGFloat(score / 3.0), height: 8)
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 8)
+                    
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(score >= 1.0 ? Color.blue : Color.orange)
+                        .frame(width: geo.size.width * CGFloat(score / 3.0), height: 8)
+                }
             }
             .frame(height: 8)
         }

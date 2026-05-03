@@ -260,7 +260,7 @@ final class AIService {
         }.resume()
     }
     
-    private struct SummaryCardStub: Decodable {
+    private struct SummaryCardStub: Decodable, Sendable {
         let topic: String
         let title: String
         let whyItMatters: String

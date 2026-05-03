@@ -430,30 +430,6 @@ private extension WebResearchService {
     }
 }
 
-private struct GDELTResponse: Decodable {
-    let articles: [GDELTArticle]
-}
-
-private struct GDELTArticle: Decodable {
-    let title: String
-    let url: String
-    let domain: String
-}
-
-private struct WikipediaSearchResponse: Decodable {
-    let query: WikipediaQuery
-}
-
-private struct WikipediaQuery: Decodable {
-    let search: [WikipediaSearchItem]
-}
-
-private struct WikipediaSearchItem: Decodable {
-    let title: String
-    let snippet: String
-    let pageid: Int
-}
-
 private extension String {
     
     var nonEmpty: String? {

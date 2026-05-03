@@ -1,41 +1,41 @@
 import Foundation
 
-struct OpenRouterResponse: Decodable {
+struct OpenRouterResponse: Decodable, Sendable {
     let model: String?
     let choices: [OpenRouterChoice]
 }
 
-struct OpenRouterChoice: Decodable {
+struct OpenRouterChoice: Decodable, Sendable {
     let message: OpenRouterMessage
 }
 
-struct OpenRouterMessage: Decodable {
+struct OpenRouterMessage: Decodable, Sendable {
     let content: String
 }
 
-struct OpenAIResponse: Decodable {
+struct OpenAIResponse: Decodable, Sendable {
     let choices: [OpenAIChoice]
 }
 
-struct OpenAIChoice: Decodable {
+struct OpenAIChoice: Decodable, Sendable {
     let message: OpenAIMessage
 }
 
-struct OpenAIMessage: Decodable {
+struct OpenAIMessage: Decodable, Sendable {
     let content: String
 }
 
-struct OpenAIErrorEnvelope: Decodable {
+struct OpenAIErrorEnvelope: Decodable, Sendable {
     let error: OpenAIErrorBody
 }
 
-struct OpenAIErrorBody: Decodable {
+struct OpenAIErrorBody: Decodable, Sendable {
     let message: String
     let type: String?
     let code: String?
 }
 
-struct HNItem: Decodable {
+struct HNItem: Decodable, Sendable {
     let id: Int
     let type: String?
     let title: String?
@@ -46,11 +46,11 @@ struct HNItem: Decodable {
     let descendants: Int?
 }
 
-struct HNSearchResponse: Decodable {
+struct HNSearchResponse: Decodable, Sendable {
     let hits: [HNSearchHit]
 }
 
-struct HNSearchHit: Decodable {
+struct HNSearchHit: Decodable, Sendable {
     let objectID: String
     let title: String?
     let storyTitle: String?
@@ -72,4 +72,29 @@ struct HNSearchHit: Decodable {
         case points
         case numComments = "num_comments"
     }
+}
+
+// Additional models for WebResearch
+struct GDELTResponse: Decodable, Sendable {
+    let articles: [GDELTArticle]
+}
+
+struct GDELTArticle: Decodable, Sendable {
+    let title: String
+    let url: String
+    let domain: String
+}
+
+struct WikipediaSearchResponse: Decodable, Sendable {
+    let query: WikipediaQuery
+}
+
+struct WikipediaQuery: Decodable, Sendable {
+    let search: [WikipediaSearchItem]
+}
+
+struct WikipediaSearchItem: Decodable, Sendable {
+    let title: String
+    let snippet: String
+    let pageid: Int
 }

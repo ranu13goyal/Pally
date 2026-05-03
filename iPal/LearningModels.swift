@@ -1,6 +1,6 @@
 import Foundation
 
-enum LearningTopic: String, CaseIterable, Codable, Identifiable {
+enum LearningTopic: String, CaseIterable, Codable, Identifiable, Sendable {
     case business = "Business"
     case techAI = "Tech/AI"
     case geopolitics = "Geopolitics"
@@ -13,13 +13,13 @@ enum LearningTopic: String, CaseIterable, Codable, Identifiable {
     var id: String { rawValue }
 }
 
-enum CardDifficulty: String, CaseIterable, Codable {
+enum CardDifficulty: String, CaseIterable, Codable, Sendable {
     case beginner
     case intermediate
     case advanced
 }
 
-enum CardFeedbackAction: String, CaseIterable, Codable {
+enum CardFeedbackAction: String, CaseIterable, Codable, Sendable {
     case like
     case dislike
     case tooBasic
@@ -29,13 +29,13 @@ enum CardFeedbackAction: String, CaseIterable, Codable {
     case skip
 }
 
-enum QuizQuestionType: String, CaseIterable, Codable {
+enum QuizQuestionType: String, CaseIterable, Codable, Sendable {
     case recall
     case concept
     case application
 }
 
-struct SummaryCard: Identifiable, Codable, Hashable {
+struct SummaryCard: Identifiable, Codable, Hashable, Sendable {
     let id: String
     let topic: LearningTopic
     let title: String
@@ -50,7 +50,7 @@ struct SummaryCard: Identifiable, Codable, Hashable {
     let publishedAt: Date
 }
 
-struct UserProfile: Codable {
+struct UserProfile: Codable, Sendable {
     var preferredTopicWeights: [String: Double]
     var savedCardIDs: [String]
     var weakTopics: [String]
@@ -58,7 +58,7 @@ struct UserProfile: Codable {
     var dailyGoalMinutes: Int
     var diversityFloor: Int
     var currentStreak: Int
-    var readCardIDs: Set<String> // NEW: Track read cards
+    var readCardIDs: Set<String>
     
     static let `default` = UserProfile(
         preferredTopicWeights: Dictionary(
@@ -74,7 +74,7 @@ struct UserProfile: Codable {
     )
 }
 
-struct UserInteraction: Identifiable, Codable {
+struct UserInteraction: Identifiable, Codable, Sendable {
     let id: UUID
     let cardID: String
     let topic: LearningTopic
@@ -99,7 +99,7 @@ struct UserInteraction: Identifiable, Codable {
     }
 }
 
-struct QuizQuestion: Identifiable, Codable, Hashable {
+struct QuizQuestion: Identifiable, Codable, Hashable, Sendable {
     let id: UUID
     let type: QuizQuestionType
     let prompt: String
@@ -124,7 +124,7 @@ struct QuizQuestion: Identifiable, Codable, Hashable {
     }
 }
 
-struct Quiz: Identifiable, Codable, Hashable {
+struct Quiz: Identifiable, Codable, Hashable, Sendable {
     let id: String
     let cardID: String
     let topic: LearningTopic
@@ -132,7 +132,7 @@ struct Quiz: Identifiable, Codable, Hashable {
     let generatedAt: Date
 }
 
-struct QuizResult: Identifiable, Codable {
+struct QuizResult: Identifiable, Codable, Sendable {
     let id: UUID
     let quizID: String
     let cardID: String
@@ -166,7 +166,7 @@ struct QuizResult: Identifiable, Codable {
     }
 }
 
-struct WeeklyLearningSummary: Equatable {
+struct WeeklyLearningSummary: Equatable, Sendable {
     let coveredTopics: [LearningTopic]
     let conceptsLearned: [String]
     let weakAreas: [String]
@@ -180,7 +180,7 @@ struct QuizSession: Identifiable {
     var id: String { quiz.id }
 }
 
-struct LearningFollowUpQuestion: Identifiable, Codable, Hashable {
+struct LearningFollowUpQuestion: Identifiable, Codable, Hashable, Sendable {
     let id: UUID
     let cardID: String
     let cardTitle: String
