@@ -80,7 +80,7 @@ final class AIService {
         
         var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 30
+        request.timeoutInterval = 60 // Increased timeout
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
@@ -129,7 +129,13 @@ final class AIService {
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Chat request network error: \(error.localizedDescription)")
-                DispatchQueue.main.async { completion("Connection error. Please check your internet.", false) }
+                let errorMessage: String
+                if let urlError = error as? URLError, urlError.code == .timedOut {
+                    errorMessage = "Request timed out. Please check your internet connection or try again."
+                } else {
+                    errorMessage = "Connection error: \(error.localizedDescription)"
+                }
+                DispatchQueue.main.async { completion(errorMessage, false) }
                 return
             }
             
@@ -174,7 +180,7 @@ final class AIService {
         
         var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 45
+        request.timeoutInterval = 75 // Increased timeout
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
@@ -218,6 +224,12 @@ final class AIService {
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Generate card network error: \(error.localizedDescription)")
+                let errorMessage: String
+                if let urlError = error as? URLError, urlError.code == .timedOut {
+                    errorMessage = "Request timed out. Please check your internet connection or try again."
+                } else {
+                    errorMessage = "Connection error: \(error.localizedDescription)"
+                }
                 DispatchQueue.main.async { completion(nil, false) }
                 return
             }
@@ -417,6 +429,10 @@ final class AIService {
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Groq request error:", error.localizedDescription)
+                if let urlError = error as? URLError, urlError.code == .timedOut {
+                    DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Request timed out", false) }
+                    return
+                }
             }
             
             guard let data = data else {
@@ -473,7 +489,7 @@ final class AIService {
         
         var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 40
+        request.timeoutInterval = 75 // Increased timeout
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
@@ -633,7 +649,7 @@ final class AIService {
         
         var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 20
+        request.timeoutInterval = 40 // Increased timeout
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
