@@ -124,15 +124,30 @@ final class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            guard let data = data else {
-                DispatchQueue.main.async {
-                    completion("I'm having trouble connecting to the brain right now. Please try again.", false)
-                }
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Chat request network error: \(error.localizedDescription)")
+                DispatchQueue.main.async { completion("Connection error. Please check your internet.", false) }
                 return
             }
             
+            guard let data = data else {
+                print("Chat request error: No data received")
+                DispatchQueue.main.async { completion("No response from server.", false) }
+                return
+            }
+            
+            if let rawString = String(data: data, encoding: .utf8) {
+                print("Chat request raw response: \(rawString)")
+            }
+            
             do {
+                if let apiError = try? JSONDecoder().decode(OpenAIErrorEnvelope.self, from: data) {
+                    print("Chat API Error: \(apiError.error.message)")
+                    DispatchQueue.main.async { completion("iPal error: \(apiError.error.message)", false) }
+                    return
+                }
+                
                 let decoded = try JSONDecoder().decode(OpenAIResponse.self, from: data)
                 let response = decoded.choices.first?.message.content ?? ""
                 
@@ -140,8 +155,9 @@ final class AIService {
                     completion(response, true)
                 }
             } catch {
+                print("Chat decode error: \(error)")
                 DispatchQueue.main.async {
-                    completion("I received an unexpected response. Please try again.", false)
+                    completion("I received an unexpected response structure. Please try again.", false)
                 }
             }
         }.resume()
@@ -202,10 +218,21 @@ final class AIService {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            guard let data = data else {
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Generate card network error: \(error.localizedDescription)")
                 DispatchQueue.main.async { completion(nil, false) }
                 return
+            }
+            
+            guard let data = data else {
+                print("Generate card error: No data received")
+                DispatchQueue.main.async { completion(nil, false) }
+                return
+            }
+            
+            if let rawString = String(data: data, encoding: .utf8) {
+                print("Generate card raw response: \(rawString)")
             }
             
             do {
@@ -213,23 +240,24 @@ final class AIService {
                 let rawContent = decoded.choices.first?.message.content ?? ""
                 
                 if let contentData = rawContent.data(using: .utf8) {
-                    var card = try JSONDecoder().decode(SummaryCardStub.self, from: contentData)
+                    let cardStub = try JSONDecoder().decode(SummaryCardStub.self, from: contentData)
                     let fullCard = SummaryCard(
                         id: UUID().uuidString,
-                        topic: LearningTopic(rawValue: card.topic) ?? .techAI,
-                        title: card.title,
-                        whyItMatters: card.whyItMatters,
-                        bulletSummary: card.bulletSummary,
-                        keyConceptTitle: card.keyConceptTitle,
-                        keyConceptExplanation: card.keyConceptExplanation,
-                        sourceName: card.sourceName,
+                        topic: LearningTopic(rawValue: cardStub.topic) ?? .techAI,
+                        title: cardStub.title,
+                        whyItMatters: cardStub.whyItMatters,
+                        bulletSummary: cardStub.bulletSummary,
+                        keyConceptTitle: cardStub.keyConceptTitle,
+                        keyConceptExplanation: cardStub.keyConceptExplanation,
+                        sourceName: cardStub.sourceName,
                         sourceURL: nil,
-                        estimatedReadingMinutes: card.estimatedReadingMinutes,
-                        difficulty: CardDifficulty(rawValue: card.difficulty) ?? .intermediate,
+                        estimatedReadingMinutes: cardStub.estimatedReadingMinutes,
+                        difficulty: CardDifficulty(rawValue: cardStub.difficulty) ?? .intermediate,
                         publishedAt: Date()
                     )
                     DispatchQueue.main.async { completion(fullCard, true) }
                 } else {
+                    print("Generate card error: Could not convert content to data")
                     DispatchQueue.main.async { completion(nil, false) }
                 }
             } catch {
