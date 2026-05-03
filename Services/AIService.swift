@@ -123,7 +123,8 @@ final class AIService {
         Card Key Concept: \(card.keyConceptTitle)
         Card Key Concept Explanation: \(card.keyConceptExplanation)
         Card Summary:
-        \(card.bulletSummary.joined(separator: "\n"))
+        \(card.bulletSummary.joined(separator: "
+"))
         
         Be concise, helpful, and encouraging. Stay focused on the topic of the card but feel free to expand on related concepts if asked.
         """
@@ -162,9 +163,9 @@ final class AIService {
                 let errorMessage: String
                 if let urlError = error as? URLError, urlError.code == .timedOut {
                     errorMessage = "Request timed out. Please check your internet connection or try again."
-                } else if urlError?.code == NSURLErrorNotConnectedToInternet {
+                } else if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
                     errorMessage = "Not connected to the internet. Please check your network."
-                } else if urlError?.code == NSURLErrorNetworkConnectionLost {
+                } else if let urlError = error as? URLError, urlError.code == .networkConnectionLost {
                     errorMessage = "Network connection lost. Please try again."
                 }
                 else {
@@ -259,6 +260,17 @@ final class AIService {
         performRequest(request: request, retries: maxRetries, delay: initialDelay) { data, response, error in
             if let error = error {
                 print("Generate card network error: \(error.localizedDescription)")
+                let errorMessage: String
+                if let urlError = error as? URLError, urlError.code == .timedOut {
+                    errorMessage = "Request timed out. Please check your internet connection or try again."
+                } else if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
+                    errorMessage = "Not connected to the internet. Please check your network."
+                } else if let urlError = error as? URLError, urlError.code == .networkConnectionLost {
+                    errorMessage = "Network connection lost. Please try again."
+                }
+                else {
+                    errorMessage = "Connection error: \(error.localizedDescription)"
+                }
                 DispatchQueue.main.async { completion(nil, false) }
                 return
             }
@@ -470,10 +482,10 @@ final class AIService {
                 if let urlError = error as? URLError, urlError.code == .timedOut {
                     DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Request timed out", false) }
                     return
-                } else if urlError?.code == NSURLErrorNotConnectedToInternet {
+                } else if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
                     DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Not connected to internet", false) }
                     return
-                } else if urlError?.code == NSURLErrorNetworkConnectionLost {
+                } else if let urlError = error as? URLError, urlError.code == .networkConnectionLost {
                     DispatchQueue.main.async { completion(self.fallbackBullets(from: input), "Fallback: Network connection lost", false) }
                     return
                 }
@@ -551,7 +563,8 @@ final class AIService {
         
         let citedSources = sourceReferences.prefix(6).map {
             "\($0.sourceName): \($0.title) (\($0.url))"
-        }.joined(separator: "\n")
+        }.joined(separator: "
+")
         
         let guidance = extraGuidance?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
             ? extraGuidance!
@@ -636,9 +649,9 @@ final class AIService {
                 let errorMessage: String
                 if let urlError = error as? URLError, urlError.code == .timedOut {
                     errorMessage = "Request timed out. Please check your internet connection or try again."
-                } else if urlError?.code == NSURLErrorNotConnectedToInternet {
+                } else if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
                     errorMessage = "Not connected to the internet. Please check your network."
-                } else if urlError?.code == NSURLErrorNetworkConnectionLost {
+                } else if let urlError = error as? URLError, urlError.code == .networkConnectionLost {
                     errorMessage = "Network connection lost. Please try again."
                 }
                 else {
@@ -824,7 +837,7 @@ final class AIService {
             .joined(separator: " ")
             .replacingOccurrences(of: "&nbsp;", with: " ")
             .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
         let sentences = cleaned
@@ -888,15 +901,15 @@ final class AIService {
         }
         
         return rawValue
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     private func normalizeComparisonText(_ text: String) -> String {
         text
             .lowercased()
-            .replacingOccurrences(of: "[^a-z0-9\\s]", with: " ", options: .regularExpression)
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "[^a-z0-9\s]", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
@@ -978,10 +991,10 @@ final class AIService {
     
     private func cleanTheme(_ rawTheme: String, fallbackPrompt: String) -> String {
         let stripped = rawTheme
-            .replacingOccurrences(of: "\"", with: "")
+            .replacingOccurrences(of: """, with: "")
             .replacingOccurrences(of: "`", with: "")
-            .replacingOccurrences(of: "(?i)\\b(layman|beginner|explain|explained|tell me about|what is|about)\\b", with: " ", options: .regularExpression)
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)\b(layman|beginner|explain|explained|tell me about|what is|about)\b", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
         if stripped.isEmpty {
@@ -1001,7 +1014,7 @@ final class AIService {
         
         let tokens = userPrompt
             .lowercased()
-            .replacingOccurrences(of: "[^a-z0-9\\s-]", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "[^a-z0-9\s-]", with: " ", options: .regularExpression)
             .split(separator: " ")
             .map(String.init)
             .filter { !$0.isEmpty && !stopWords.contains($0) }
@@ -1021,7 +1034,7 @@ final class AIService {
     
     private func normalizeThemeCandidate(_ candidate: String) -> String {
         let cleaned = candidate
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
         let lowered = cleaned.lowercased()
