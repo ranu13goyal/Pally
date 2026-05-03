@@ -71,42 +71,44 @@ struct HistoryRow: View {
     let lastMessage: ChatMessage?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(card.topic.rawValue)
+                Text(card.topic.rawValue.uppercased())
                     .font(.caption2)
                     .fontWeight(.bold)
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
-                    .clipShape(Capsule())
+                    .fontDesign(.sans)
+                    .foregroundColor(.secondary)
                 
                 Spacer()
                 
                 if let timestamp = lastMessage?.timestamp {
                     Text(timestamp, style: .date)
                         .font(.caption2)
+                        .fontDesign(.sans)
                         .foregroundColor(.secondary)
                 }
             }
             
             Text(card.title)
                 .font(.headline)
-                .lineLimit(1)
+                .fontDesign(.serif)
+                .lineLimit(2)
             
             if let lastText = lastMessage?.text {
                 Text(lastText)
                     .font(.subheadline)
+                    .fontDesign(.serif)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
+                    .lineSpacing(4)
             } else {
                 Text("Start exploring...")
                     .font(.subheadline)
+                    .fontDesign(.serif)
                     .foregroundColor(.secondary)
                     .italic()
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
     }
 }

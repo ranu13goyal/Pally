@@ -102,6 +102,7 @@ struct DailyTrendChart: View {
                     VStack {
                         Text("\(count)")
                             .font(.system(size: 10, weight: .bold))
+                            .fontDesign(.serif)
                             .foregroundColor(.blue)
                         
                         RoundedRectangle(cornerRadius: 4)
@@ -110,6 +111,7 @@ struct DailyTrendChart: View {
                         
                         Text(day)
                             .font(.system(size: 10))
+                            .fontDesign(.sans)
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -119,6 +121,7 @@ struct DailyTrendChart: View {
             
             Text("Cards read over the last 7 days")
                 .font(.caption)
+                .fontDesign(.sans)
                 .foregroundColor(.secondary)
         }
     }
@@ -138,8 +141,10 @@ struct StatBox: View {
             Text(value)
                 .font(.title3)
                 .fontWeight(.bold)
+                .fontDesign(.serif)
             Text(title)
                 .font(.caption)
+                .fontDesign(.sans)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
@@ -158,9 +163,11 @@ struct TopicRow: View {
             HStack {
                 Text(topic)
                     .font(.subheadline)
+                    .fontDesign(.sans)
                 Spacer()
                 Text(String(format: "%.1fx", score))
                     .font(.caption)
+                    .fontDesign(.sans)
                     .foregroundColor(.secondary)
             }
             
