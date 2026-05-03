@@ -6,7 +6,8 @@ final class LearningContentService {
         for profile: UserProfile,
         completion: @escaping ([SummaryCard]) -> Void
     ) {
-        let ranked = rankedCards(from: LearningMockData.cards, profile: profile)
+        let shuffled = LearningMockData.cards.shuffled()
+        let ranked = rankedCards(from: shuffled, profile: profile)
         let selected = diversifiedSelection(from: ranked, diversityFloor: profile.diversityFloor, targetCount: 7)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {

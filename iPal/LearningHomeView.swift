@@ -60,6 +60,20 @@ struct LearningHomeView: View {
                         ProgressView("Curating your daily learning feed...")
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding()
+                    } else if viewModel.cards.isEmpty && viewModel.searchedCard == nil {
+                        VStack(spacing: 20) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.green)
+                            Text("All caught up!")
+                                .font(.headline)
+                            Text("You've read everything in your current feed. Try searching for a new topic above to keep learning.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
                     } else {
                         ForEach(viewModel.cards) { card in
                             LearningCardView(

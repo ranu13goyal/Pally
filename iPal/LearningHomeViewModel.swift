@@ -63,7 +63,6 @@ final class LearningHomeViewModel: ObservableObject {
             profileManager.handleFeedback(.quizMe, for: card)
         default:
             profileManager.handleFeedback(action, for: card)
-            loadDailyCards()
         }
     }
     
@@ -141,12 +140,7 @@ extension LearningHomeViewModel {
     func markAsRead(card: SummaryCard) {
         profileManager.markAsRead(card: card)
         
-        // UI cleanup: remove from feed immediately
-        withAnimation {
-            cards.removeAll { $0.id == card.id }
-            if searchedCard?.id == card.id {
-                searchedCard = nil
-            }
-        }
+        // We no longer remove it immediately from the feed.
+        // Tapping Refresh will filter them out.
     }
 }
