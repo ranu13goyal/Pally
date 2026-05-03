@@ -18,6 +18,7 @@ final class LearningHomeViewModel: ObservableObject {
     private let contentService: LearningContentService
     private let aiService: AIService
     private let storyManager: StoryManager
+    private let generationService = ContentGenerationService()
     
     init() {
         self.profileManager = UserProfileManager()
@@ -51,6 +52,7 @@ final class LearningHomeViewModel: ObservableObject {
             self.cards = cards.filter { !self.profileManager.profile.readCardIDs.contains($0.id) }
             self.weeklySummary = self.profileManager.weeklySummary(from: cards)
             self.isLoading = false
+            self.generationService.replenishIfNeeded(profile: self.profileManager.profile)
         }
     }
     
@@ -139,6 +141,7 @@ extension LearningHomeViewModel {
     
     func markAsRead(card: SummaryCard) {
         profileManager.markAsRead(card: card)
+        generationService.replenishIfNeeded(profile: profileManager.profile)
         
         // We no longer remove it immediately from the feed.
         // Tapping Refresh will filter them out.

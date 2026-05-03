@@ -6,9 +6,14 @@ final class LearningContentService {
         for profile: UserProfile,
         completion: @escaping ([SummaryCard]) -> Void
     ) {
-        let shuffled = LearningMockData.cards.shuffled()
-        let ranked = rankedCards(from: shuffled, profile: profile)
-        let selected = diversifiedSelection(from: ranked, diversityFloor: profile.diversityFloor, targetCount: 7)
+        let allCards = CardStorageManager.shared.getAllCards()
+        let unread = allCards.filter { !profile.readCardIDs.contains($0.id) }
+        
+        // Fallback to mock data if buffer is empty
+        let sourcePool = unread.isEmpty ? LearningMockData.cards : unread
+        
+        let ranked = rankedCards(from: sourcePool, profile: profile)
+        let selected = diversifiedSelection(from: ranked, diversityFloor: profile.diversityFloor, targetCount: 10)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             completion(selected)
