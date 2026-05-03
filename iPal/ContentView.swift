@@ -19,6 +19,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Learn", systemImage: "brain.head.profile")
                 }
+            
+            HistoryView()
+                .tabItem {
+                    Label("History", systemImage: "clock.arrow.circlepath")
+                }
         }
     }
 }
