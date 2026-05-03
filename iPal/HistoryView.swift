@@ -3,6 +3,7 @@ import SwiftUI
 struct HistoryView: View {
     @StateObject private var historyManager = ChatHistoryManager.shared
     @State private var selectedChatCard: SummaryCard?
+    @State private var searchText: String = "" // NEW
     
     // We'll need access to all known cards to map IDs back to objects
     // In a real app, this would be a local database.
@@ -10,28 +11,41 @@ struct HistoryView: View {
         CardStorageManager.shared.getAllCards() + LearningMockData.cards
     }
     
+    private var filteredKeys: [String] {
+        let historyKeys = Array(historyManager.history.keys).sorted()
+        if searchText.isEmpty {
+            return historyKeys
+        } else {
+            return historyKeys.filter { cardID in
+                guard let card = allKnownCards.first(where: { $0.id == cardID }) else { return false }
+                return card.title.localizedCaseInsensitiveContains(searchText) ||
+                       card.topic.rawValue.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
+    
     var body: some View {
         NavigationView {
             List {
-                let historyKeys = Array(historyManager.history.keys).sorted()
-                
-                if historyKeys.isEmpty {
+                if filteredKeys.isEmpty {
                     VStack(spacing: 20) {
-                        Image(systemName: "clock.arrow.circlepath")
+                        Image(systemName: "magnifyingglass")
                             .font(.system(size: 50))
                             .foregroundColor(.secondary)
-                        Text("No conversation history yet")
+                        Text("No stories found")
                             .font(.headline)
-                        Text("Deep dives from your Learn tab will appear here.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        if searchText.isEmpty {
+                            Text("Deep dives from your Learn tab will appear here.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 50)
                     .listRowBackground(Color.clear)
                 } else {
-                    ForEach(historyKeys, id: \.self) { cardID in
+                    ForEach(filteredKeys, id: \.self) { cardID in
                         if let card = allKnownCards.first(where: { $0.id == cardID }) {
                             Button {
                                 selectedChatCard = card
@@ -44,6 +58,7 @@ struct HistoryView: View {
                 }
             }
             .navigationTitle("Stories")
+            .searchable(text: $searchText, prompt: "Search stories by topic or title...")
             .sheet(item: $selectedChatCard) { card in
                 ExploreMoreView(card: card)
             }
