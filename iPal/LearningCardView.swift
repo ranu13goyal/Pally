@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct LearningCardView: View {
-    
     let card: SummaryCard
     let isSaved: Bool
     let isRead: Bool
@@ -15,29 +14,27 @@ struct LearningCardView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(card.topic.rawValue)
+                    Text(card.topic.rawValue.uppercased())
                         .font(.caption)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.blue.opacity(0.12))
-                        .foregroundColor(.blue)
-                        .clipShape(Capsule())
+                        .fontWeight(.bold)
+                        .fontDesign(.sans)
+                        .foregroundColor(.secondary)
                     
                     Text(card.title)
-                        .font(.title3)
-                        .fontWeight(.semibold)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .fontDesign(.serif)
                         .foregroundColor(.primary)
                 }
                 
                 Spacer()
                 
-                Button {
-                    onFeedback(.save)
-                } label: {
+                Button(action: { onFeedback(.save) }) {
                     Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
                         .font(.title3)
-                        .foregroundColor(isSaved ? .orange : .secondary)
+                        .foregroundColor(isSaved ? .primary : .secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -47,11 +44,17 @@ struct LearningCardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Key takeaways")
                     .font(.headline)
+                    .fontDesign(.serif)
                 
                 ForEach(card.bulletSummary, id: \.self) { bullet in
-                    Text("• \(bullet)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .fontDesign(.serif)
+                        Text(bullet)
+                            .fontDesign(.serif)
+                            .lineSpacing(4)
+                    }
+                    .foregroundColor(.secondary)
                 }
             }
             
@@ -61,18 +64,25 @@ struct LearningCardView: View {
             )
             
             HStack {
-                Text("\(card.estimatedReadingMinutes) min")
-                    .font(.caption)
+                Text("\(card.estimatedReadingMinutes) MIN READ")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .fontDesign(.sans)
                     .foregroundColor(.secondary)
                 
                 Spacer()
                 
                 if let sourceURL = card.sourceURL, let url = URL(string: sourceURL) {
-                    Link(card.sourceName, destination: url)
-                        .font(.caption)
+                    Link(card.sourceName.uppercased(), destination: url)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .fontDesign(.sans)
+                        .foregroundColor(.secondary)
                 } else {
-                    Text(card.sourceName)
-                        .font(.caption)
+                    Text(card.sourceName.uppercased())
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .fontDesign(.sans)
                         .foregroundColor(.secondary)
                 }
             }
@@ -80,92 +90,102 @@ struct LearningCardView: View {
             feedbackBar
             
             actionButtons
+            
+            Divider()
+                .padding(.top, 8)
         }
-        .padding(20)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(.vertical, 16)
+        .padding(.horizontal, 8)
     }
 }
 
 private extension LearningCardView {
-    
     func insightBlock(title: String, content: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.headline)
+                .fontDesign(.serif)
             Text(content)
                 .font(.subheadline)
+                .fontDesign(.serif)
                 .foregroundColor(.secondary)
+                .lineSpacing(4)
         }
     }
     
     var feedbackBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 16) {
             let currentFeedback = onGetFeedback()
             
             quickAction(
-                "Like",
                 icon: "hand.thumbsup",
                 action: .like,
-                isActive: currentFeedback == .like,
-                activeColor: .blue
+                isActive: currentFeedback == .like
             )
             
             quickAction(
-                "Dislike",
                 icon: "hand.thumbsdown",
                 action: .dislike,
-                isActive: currentFeedback == .dislike,
-                activeColor: .red
+                isActive: currentFeedback == .dislike
             )
         }
+        .padding(.top, 8)
     }
     
     func quickAction(
-        _ title: String,
         icon: String,
         action: CardFeedbackAction,
-        isActive: Bool = false,
-        activeColor: Color = .blue
+        isActive: Bool = false
     ) -> some View {
         Button {
-            onFeedback(action)
+            withAnimation(.easeInOut(duration: 0.2)) {
+                onFeedback(action)
+            }
         } label: {
-            Label(title, systemImage: isActive ? "\(icon).fill" : icon)
-                .font(.subheadline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(isActive ? activeColor.opacity(0.15) : Color(.systemBackground))
-                .foregroundColor(isActive ? activeColor : .primary)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            Image(systemName: isActive ? "\(icon).fill" : icon)
+                .font(.system(size: 18))
+                .foregroundColor(isActive ? .primary : .secondary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
     
     var actionButtons: some View {
         HStack(spacing: 12) {
-            Button(action: onMarkAsRead) {
-                Label(isRead ? "Read" : "Mark as Read", systemImage: isRead ? "checkmark.circle.fill" : "circle")
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    onMarkAsRead()
+                }
+            } label: {
+                Text(isRead ? "Read" : "Mark as Read")
                     .font(.subheadline)
-                    .fontWeight(.medium)
+                    .fontWeight(.semibold)
+                    .fontDesign(.sans)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(isRead ? Color.green.opacity(0.15) : Color.blue.opacity(0.1))
-                    .foregroundColor(isRead ? .green : .blue)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .frame(height: 44)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isRead ? Color.secondary.opacity(0.3) : Color.primary, lineWidth: 1)
+                    )
+                    .foregroundColor(isRead ? .secondary : .primary)
             }
             .buttonStyle(.plain)
             .disabled(isRead)
             
             Button(action: onExploreMore) {
-                Label("Explore More", systemImage: "sparkles")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.orange.opacity(0.1))
-                    .foregroundColor(.orange)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                    Text("Explore More")
+                }
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .fontDesign(.sans)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(Color.primary)
+                .foregroundColor(Color(.systemBackground))
+                .cornerRadius(8)
             }
             .buttonStyle(.plain)
         }

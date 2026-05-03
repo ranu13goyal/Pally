@@ -99,7 +99,7 @@ struct LearningHomeView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(.systemBackground))
             .navigationTitle("Learn")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
