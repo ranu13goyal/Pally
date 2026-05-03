@@ -14,12 +14,14 @@ final class LearningHomeViewModel: ObservableObject {
     let profileManager: UserProfileManager
     let questionManager: LearningQuestionManager
     private let contentService: LearningContentService
+    private let aiService: AIService
     private let storyManager: StoryManager
     
     init() {
         self.profileManager = UserProfileManager()
         self.questionManager = LearningQuestionManager()
         self.contentService = LearningContentService()
+        self.aiService = AIService()
         self.storyManager = StoryManager()
         loadDailyCards()
     }
@@ -28,11 +30,13 @@ final class LearningHomeViewModel: ObservableObject {
         profileManager: UserProfileManager,
         questionManager: LearningQuestionManager,
         contentService: LearningContentService,
+        aiService: AIService,
         storyManager: StoryManager
     ) {
         self.profileManager = profileManager
         self.questionManager = questionManager
         self.contentService = contentService
+        self.aiService = aiService
         self.storyManager = storyManager
         loadDailyCards()
     }
@@ -118,25 +122,17 @@ final class LearningHomeViewModel: ObservableObject {
 }
 
 extension LearningHomeViewModel {
-    func searchImmediateKnowledge(query: String) -> SummaryCard? {
+    func searchImmediateKnowledge(query: String, completion: @escaping (SummaryCard?) -> Void) {
         if let found = LearningMockData.cards.first(where: { $0.title.lowercased().contains(query.lowercased()) || $0.keyConceptTitle.lowercased().contains(query.lowercased()) }) {
-            return found
+            completion(found)
+            return
         }
         
-        return SummaryCard(
-            id: UUID().uuidString,
-            topic: .techAI,
-            title: query,
-            whyItMatters: "On-demand knowledge generation helps you learn what you need, right when you need it.",
-            bulletSummary: ["Generated context for \(query)"],
-            keyConceptTitle: query,
-            keyConceptExplanation: "A generated explanation for \(query).",
-            sourceName: "iPal AI",
-            sourceURL: nil,
-            estimatedReadingMinutes: 2,
-            difficulty: .intermediate,
-            publishedAt: Date()
-        )
+        isLoading = true
+        aiService.generateLearningCard(query: query) { card, _ in
+            self.isLoading = false
+            completion(card)
+        }
     }
     
     func markAsRead(card: SummaryCard) {

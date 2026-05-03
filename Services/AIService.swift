@@ -63,6 +63,194 @@ final class AIService {
         callStoryThemeGeneration(userPrompt: userPrompt, completion: completion)
     }
     
+    func generateChatResponse(
+        card: SummaryCard,
+        messages: [String],
+        completion: @escaping (String, Bool) -> Void
+    ) {
+        let trimmedKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedKey.isEmpty,
+              let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
+            completion("I'm sorry, I can't chat right now as the API key is missing.", false)
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 30
+        request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let systemPrompt = """
+        You are iPal, an AI tutor. You are helping the user explore a specific topic based on a learning card.
+        
+        Card Topic: \(card.topic.rawValue)
+        Card Title: \(card.title)
+        Card Why It Matters: \(card.whyItMatters)
+        Card Key Concept: \(card.keyConceptTitle)
+        Card Key Concept Explanation: \(card.keyConceptExplanation)
+        Card Summary:
+        \(card.bulletSummary.joined(separator: "\n"))
+        
+        Be concise, helpful, and encouraging. Stay focused on the topic of the card but feel free to expand on related concepts if asked.
+        """
+        
+        var apiMessages: [[String: String]] = [
+            ["role": "system", "content": systemPrompt]
+        ]
+        
+        for message in messages {
+            if message.hasPrefix("You: ") {
+                let content = message.replacingOccurrences(of: "You: ", with: "")
+                apiMessages.append(["role": "user", "content": content])
+            } else if message.hasPrefix("iPal: ") {
+                let content = message.replacingOccurrences(of: "iPal: ", with: "")
+                apiMessages.append(["role": "assistant", "content": content])
+            }
+        }
+        
+        let body: [String: Any] = [
+            "model": "gpt-4o-mini",
+            "messages": apiMessages,
+            "temperature": 0.7,
+            "max_tokens": 500
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            completion("I encountered an error preparing your chat request.", false)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    completion("I'm having trouble connecting to the brain right now. Please try again.", false)
+                }
+                return
+            }
+            
+            do {
+                let decoded = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+                let response = decoded.choices.first?.message.content ?? ""
+                
+                DispatchQueue.main.async {
+                    completion(response, true)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion("I received an unexpected response. Please try again.", false)
+                }
+            }
+        }.resume()
+    }
+    
+    func generateLearningCard(
+        query: String,
+        completion: @escaping (SummaryCard?, Bool) -> Void
+    ) {
+        let trimmedKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedKey.isEmpty,
+              let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
+            completion(nil, false)
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 45
+        request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let prompt = """
+        Generate a learning card for the topic: \(query).
+        
+        Return valid JSON only with this exact schema:
+        {
+          "topic": "Business" | "Tech/AI" | "Geopolitics" | "History" | "Psychology" | "Science" | "Economics" | "Culture",
+          "title": "A catchy title",
+          "whyItMatters": "One sentence on why this topic is important today",
+          "bulletSummary": ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5"],
+          "keyConceptTitle": "The name of a single key concept",
+          "keyConceptExplanation": "A 1-2 sentence explanation of that concept",
+          "sourceName": "iPal AI Research",
+          "estimatedReadingMinutes": 3,
+          "difficulty": "beginner" | "intermediate" | "advanced"
+        }
+        
+        Be factual, concise, and educational.
+        """
+        
+        let body: [String: Any] = [
+            "model": "gpt-4o-mini",
+            "messages": [
+                ["role": "system", "content": "You are a research assistant that generates structured learning content."],
+                ["role": "user", "content": prompt]
+            ],
+            "response_format": ["type": "json_object"],
+            "temperature": 0.5,
+            "max_tokens": 800
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            completion(nil, false)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            guard let data = data else {
+                DispatchQueue.main.async { completion(nil, false) }
+                return
+            }
+            
+            do {
+                let decoded = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+                let rawContent = decoded.choices.first?.message.content ?? ""
+                
+                if let contentData = rawContent.data(using: .utf8) {
+                    var card = try JSONDecoder().decode(SummaryCardStub.self, from: contentData)
+                    let fullCard = SummaryCard(
+                        id: UUID().uuidString,
+                        topic: LearningTopic(rawValue: card.topic) ?? .techAI,
+                        title: card.title,
+                        whyItMatters: card.whyItMatters,
+                        bulletSummary: card.bulletSummary,
+                        keyConceptTitle: card.keyConceptTitle,
+                        keyConceptExplanation: card.keyConceptExplanation,
+                        sourceName: card.sourceName,
+                        sourceURL: nil,
+                        estimatedReadingMinutes: card.estimatedReadingMinutes,
+                        difficulty: CardDifficulty(rawValue: card.difficulty) ?? .intermediate,
+                        publishedAt: Date()
+                    )
+                    DispatchQueue.main.async { completion(fullCard, true) }
+                } else {
+                    DispatchQueue.main.async { completion(nil, false) }
+                }
+            } catch {
+                print("Generate card decode error: \(error)")
+                DispatchQueue.main.async { completion(nil, false) }
+            }
+        }.resume()
+    }
+    
+    private struct SummaryCardStub: Decodable {
+        let topic: String
+        let title: String
+        let whyItMatters: String
+        let bulletSummary: [String]
+        let keyConceptTitle: String
+        let keyConceptExplanation: String
+        let sourceName: String
+        let estimatedReadingMinutes: Int
+        let difficulty: String
+    }
+    
     // MARK: - Free Summary
     
     private func callOpenRouterFree(input: String, completion: @escaping ([String], String, Bool) -> Void) {

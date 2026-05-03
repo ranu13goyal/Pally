@@ -18,7 +18,9 @@ struct LearningHomeView: View {
                             
                             Button("Learn") {
                                 if !searchQuery.isEmpty {
-                                    searchedCard = viewModel.searchImmediateKnowledge(query: searchQuery)
+                                    viewModel.searchImmediateKnowledge(query: searchQuery) { card in
+                                        searchedCard = card
+                                    }
                                     searchQuery = ""
                                 }
                             }

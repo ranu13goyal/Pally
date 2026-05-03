@@ -4,7 +4,9 @@ struct ExploreMoreView: View {
     let card: SummaryCard
     @State private var chatInput: String = ""
     @State private var messages: [String] = [] 
+    @State private var isTyping = false
     @Environment(\.dismiss) var dismiss
+    private let aiService = AIService()
     
     var body: some View {
         NavigationView {
@@ -40,6 +42,17 @@ struct ExploreMoreView: View {
                             ForEach(messages, id: \.self) { message in
                                 MessageBubble(text: message)
                             }
+                            
+                            if isTyping {
+                                HStack {
+                                    ProgressView()
+                                        .padding(.trailing, 4)
+                                    Text("iPal is thinking...")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal)
+                            }
                         }
                     }
                     .padding()
@@ -53,11 +66,16 @@ struct ExploreMoreView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     
                     Button(action: sendMessage) {
-                        Image(systemName: "paperplane.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.blue)
+                        if isTyping {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "paperplane.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.blue)
+                        }
                     }
-                    .disabled(chatInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(chatInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTyping)
                 }
                 .padding()
             }
@@ -79,10 +97,11 @@ struct ExploreMoreView: View {
         
         messages.append("You: \(trimmedInput)")
         chatInput = ""
+        isTyping = true
         
-        // Mock response
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            messages.append("iPal: Let's explore \(card.title) further. (LLM integration pending)")
+        aiService.generateChatResponse(card: card, messages: messages) { response, success in
+            isTyping = false
+            messages.append("iPal: \(response)")
         }
     }
 }
