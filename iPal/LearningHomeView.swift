@@ -6,6 +6,7 @@ struct LearningHomeView: View {
     @State private var exploringCard: SummaryCard?
     @State private var searchQuery: String = ""
     @State private var searchedCard: SummaryCard?
+    @State private var showingAnalytics = false
     
     var body: some View {
         NavigationView {
@@ -82,6 +83,14 @@ struct LearningHomeView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Learn")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        showingAnalytics = true
+                    } label: {
+                        Image(systemName: "chart.bar.xaxis")
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         viewModel.loadDailyCards()
@@ -98,6 +107,9 @@ struct LearningHomeView: View {
         }
         .sheet(item: $exploringCard) { card in
             ExploreMoreView(card: card)
+        }
+        .sheet(isPresented: $showingAnalytics) {
+            AnalyticsView(profileManager: viewModel.profileManager)
         }
         .alert("Learn", isPresented: deepDiveAlertIsPresented) {
             Button("OK") {
