@@ -43,7 +43,7 @@ struct HistoryView: View {
                     }
                 }
             }
-            .navigationTitle("History")
+            .navigationTitle("Stories")
             .sheet(item: $selectedChatCard) { card in
                 ExploreMoreView(card: card)
             }

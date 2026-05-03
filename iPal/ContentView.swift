@@ -22,7 +22,7 @@ struct ContentView: View {
             
             HistoryView()
                 .tabItem {
-                    Label("History", systemImage: "clock.arrow.circlepath")
+                    Label("Stories", systemImage: "text.book.closed")
                 }
         }
     }
