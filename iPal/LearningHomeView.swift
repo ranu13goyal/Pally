@@ -5,7 +5,6 @@ struct LearningHomeView: View {
     @StateObject private var viewModel = LearningHomeViewModel()
     @State private var exploringCard: SummaryCard?
     @State private var searchQuery: String = ""
-    @State private var searchedCard: SummaryCard?
     @State private var showingAnalytics = false
     
     var body: some View {
@@ -20,7 +19,7 @@ struct LearningHomeView: View {
                             Button("Learn") {
                                 if !searchQuery.isEmpty {
                                     viewModel.searchImmediateKnowledge(query: searchQuery) { card in
-                                        searchedCard = card
+                                        viewModel.searchedCard = card
                                     }
                                     searchQuery = ""
                                 }
@@ -28,7 +27,7 @@ struct LearningHomeView: View {
                         }
                         .padding(.horizontal)
                         
-                        if let card = searchedCard {
+                        if let card = viewModel.searchedCard {
                             VStack(alignment: .leading) {
                                 Text("Search Result")
                                     .font(.subheadline)
@@ -42,6 +41,9 @@ struct LearningHomeView: View {
                                     questionCount: viewModel.questionManager.questionCount(for: card),
                                     onFeedback: { action in
                                         viewModel.handle(action, for: card)
+                                    },
+                                    onGetFeedback: {
+                                        viewModel.profileManager.profile.feedbackHistory[card.id]
                                     },
                                     onMarkAsRead: {
                                         viewModel.markAsRead(card: card)
@@ -67,6 +69,9 @@ struct LearningHomeView: View {
                                 questionCount: viewModel.questionManager.questionCount(for: card),
                                 onFeedback: { action in
                                     viewModel.handle(action, for: card)
+                                },
+                                onGetFeedback: {
+                                    viewModel.profileManager.profile.feedbackHistory[card.id]
                                 },
                                 onMarkAsRead: {
                                     viewModel.markAsRead(card: card)

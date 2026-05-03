@@ -10,6 +10,7 @@ final class LearningHomeViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isGeneratingDeepDive = false
     @Published var deepDiveStatusMessage: String?
+    @Published var searchedCard: SummaryCard?
     
     let profileManager: UserProfileManager
     let questionManager: LearningQuestionManager
@@ -137,7 +138,14 @@ extension LearningHomeViewModel {
     }
     
     func markAsRead(card: SummaryCard) {
-        profileManager.profile.readCardIDs.insert(card.id)
-        profileManager.handleFeedback(.like, for: card)
+        profileManager.markAsRead(card: card)
+        
+        // UI cleanup: remove from feed immediately
+        withAnimation {
+            cards.removeAll { $0.id == card.id }
+            if searchedCard?.id == card.id {
+                searchedCard = nil
+            }
+        }
     }
 }

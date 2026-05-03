@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 enum LearningTopic: String, CaseIterable, Codable, Identifiable, Sendable {
     case business = "Business"
@@ -59,6 +59,8 @@ struct UserProfile: Codable, Sendable {
     var diversityFloor: Int
     var currentStreak: Int
     var readCardIDs: Set<String>
+    var readCardHistory: [String: Date] // NEW: Track when cards were read
+    var feedbackHistory: [String: CardFeedbackAction] // NEW: Track feedback per card
     
     static let `default` = UserProfile(
         preferredTopicWeights: Dictionary(
@@ -70,7 +72,9 @@ struct UserProfile: Codable, Sendable {
         dailyGoalMinutes: 15,
         diversityFloor: 4,
         currentStreak: 1,
-        readCardIDs: []
+        readCardIDs: [],
+        readCardHistory: [:],
+        feedbackHistory: [:]
     )
 }
 

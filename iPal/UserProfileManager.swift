@@ -26,6 +26,11 @@ final class UserProfileManager: ObservableObject {
         let interaction = UserInteraction(cardID: card.id, topic: card.topic, action: action, dwellTime: dwellTime)
         interactions.insert(interaction, at: 0)
         
+        // Track visual feedback state
+        if action == .like || action == .dislike {
+            profile.feedbackHistory[card.id] = action
+        }
+        
         switch action {
         case .like:
             adjustWeight(for: card.topic, delta: 0.45)
@@ -59,6 +64,7 @@ final class UserProfileManager: ObservableObject {
     
     func markAsRead(card: SummaryCard) {
         profile.readCardIDs.insert(card.id)
+        profile.readCardHistory[card.id] = Date()
         handleFeedback(.like, for: card)
     }
     

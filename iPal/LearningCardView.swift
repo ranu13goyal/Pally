@@ -7,6 +7,7 @@ struct LearningCardView: View {
     let isRead: Bool
     let questionCount: Int
     let onFeedback: (CardFeedbackAction) -> Void
+    let onGetFeedback: () -> CardFeedbackAction?
     let onMarkAsRead: () -> Void
     let onExploreMore: () -> Void
     
@@ -100,21 +101,42 @@ private extension LearningCardView {
     
     var feedbackBar: some View {
         HStack(spacing: 10) {
-            quickAction("Like", icon: "hand.thumbsup", action: .like)
-            quickAction("Dislike", icon: "hand.thumbsdown", action: .dislike)
+            let currentFeedback = onGetFeedback()
+            
+            quickAction(
+                "Like",
+                icon: "hand.thumbsup",
+                action: .like,
+                isActive: currentFeedback == .like,
+                activeColor: .blue
+            )
+            
+            quickAction(
+                "Dislike",
+                icon: "hand.thumbsdown",
+                action: .dislike,
+                isActive: currentFeedback == .dislike,
+                activeColor: .red
+            )
         }
     }
     
-    func quickAction(_ title: String, icon: String, action: CardFeedbackAction) -> some View {
+    func quickAction(
+        _ title: String,
+        icon: String,
+        action: CardFeedbackAction,
+        isActive: Bool = false,
+        activeColor: Color = .blue
+    ) -> some View {
         Button {
             onFeedback(action)
         } label: {
-            Label(title, systemImage: icon)
+            Label(title, systemImage: isActive ? "\(icon).fill" : icon)
                 .font(.subheadline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(Color(.systemBackground))
-                .foregroundColor(.primary)
+                .background(isActive ? activeColor.opacity(0.15) : Color(.systemBackground))
+                .foregroundColor(isActive ? activeColor : .primary)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)

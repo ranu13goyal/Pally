@@ -5,6 +5,7 @@ struct ExploreMoreView: View {
     @State private var chatInput: String = ""
     @State private var messages: [ChatMessage] = [] 
     @State private var isTyping = false
+    @State private var errorMessage: String?
     @Environment(\.dismiss) var dismiss
     private let aiService = AIService()
     
@@ -53,6 +54,14 @@ struct ExploreMoreView: View {
                                 }
                                 .padding(.horizontal)
                             }
+                            
+                            if let error = errorMessage {
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal)
+                                    .padding(.top, 4)
+                            }
                         }
                     }
                     .padding()
@@ -99,6 +108,7 @@ struct ExploreMoreView: View {
         guard !trimmedInput.isEmpty else { return }
         
         // Save user message
+        errorMessage = nil
         ChatHistoryManager.shared.saveMessage(trimmedInput, isUser: true, for: card.id)
         messages = ChatHistoryManager.shared.messages(for: card.id)
         
@@ -113,6 +123,8 @@ struct ExploreMoreView: View {
             if success {
                 ChatHistoryManager.shared.saveMessage(response, isUser: false, for: card.id)
                 messages = ChatHistoryManager.shared.messages(for: card.id)
+            } else {
+                errorMessage = response
             }
         }
     }

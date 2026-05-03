@@ -16,6 +16,19 @@ struct AnalyticsView: View {
                     }
                     .padding(.horizontal)
                     
+                    // Daily Trend
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Learning Trend")
+                            .font(.headline)
+                            .padding(.horizontal)
+                        
+                        DailyTrendChart(readHistory: profileManager.profile.readCardHistory)
+                            .padding()
+                            .background(Color(.secondarySystemBackground))
+                            .cornerRadius(16)
+                            .padding(.horizontal)
+                    }
+                    
                     // Topic Breakdown
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Topic Engagement")
@@ -26,37 +39,6 @@ struct AnalyticsView: View {
                             ForEach(LearningTopic.allCases) { topic in
                                 let score = profileManager.preferenceScore(for: topic)
                                 TopicRow(topic: topic.rawValue, score: score)
-                            }
-                        }
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(16)
-                        .padding(.horizontal)
-                    }
-                    
-                    // Recent Activity
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Recent Progress")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-                        VStack(alignment: .leading, spacing: 12) {
-                            let totalQuizzes = profileManager.quizResults.count
-                            let avgScore = totalQuizzes > 0 ? Double(profileManager.quizResults.map(\.correctCount).reduce(0, +)) / Double(profileManager.quizResults.map(\.totalCount).reduce(0, +)) : 0
-                            
-                            HStack {
-                                Text("Quizzes Taken")
-                                Spacer()
-                                Text("\(totalQuizzes)")
-                                    .fontWeight(.bold)
-                            }
-                            
-                            HStack {
-                                Text("Average Accuracy")
-                                Spacer()
-                                Text("\(Int(avgScore * 100))%")
-                                    .fontWeight(.bold)
-                                    .foregroundColor(avgScore >= 0.7 ? .green : .orange)
                             }
                         }
                         .padding()
@@ -75,6 +57,69 @@ struct AnalyticsView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+struct DailyTrendChart: View {
+    let readHistory: [String: Date]
+    
+    private var dailyStats: [(String, Int)] {
+        let calendar = Calendar.current
+        let now = Date()
+        var counts: [Date: Int] = [:]
+        
+        // Count for last 7 days
+        for i in 0..<7 {
+            if let date = calendar.date(byAdding: .day, value: -i, to: now) {
+                let startOfDay = calendar.startOfDay(for: date)
+                counts[startOfDay] = 0
+            }
+        }
+        
+        for date in readHistory.values {
+            let startOfDay = calendar.startOfDay(for: date)
+            if counts[startOfDay] != nil {
+                counts[startOfDay]! += 1
+            }
+        }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        
+        return counts.keys.sorted().map { date in
+            (formatter.string(from: date), counts[date] ?? 0)
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(alignment: .bottom, spacing: 12) {
+                let maxCount = dailyStats.map(\.1).max() ?? 1
+                let effectiveMax = max(maxCount, 5)
+                
+                ForEach(dailyStats, id: \.0) { day, count in
+                    VStack {
+                        Text("\(count)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.blue)
+                        
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.blue.gradient)
+                            .frame(height: CGFloat(count) / CGFloat(effectiveMax) * 100)
+                        
+                        Text(day)
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 140)
+            
+            Text("Cards read over the last 7 days")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
     }
 }
