@@ -111,7 +111,7 @@ struct DailyTrendChart: View {
                         
                         Text(day)
                             .font(.system(size: 10))
-                            .fontDesign(.sans)
+                            .fontDesign(.default)
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -121,7 +121,7 @@ struct DailyTrendChart: View {
             
             Text("Cards read over the last 7 days")
                 .font(.caption)
-                .fontDesign(.sans)
+                .fontDesign(.default)
                 .foregroundColor(.secondary)
         }
     }
@@ -144,7 +144,7 @@ struct StatBox: View {
                 .fontDesign(.serif)
             Text(title)
                 .font(.caption)
-                .fontDesign(.sans)
+                .fontDesign(.default)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
@@ -163,11 +163,11 @@ struct TopicRow: View {
             HStack {
                 Text(topic)
                     .font(.subheadline)
-                    .fontDesign(.sans)
+                    .fontDesign(.default)
                 Spacer()
                 Text(String(format: "%.1fx", score))
                     .font(.caption)
-                    .fontDesign(.sans)
+                    .fontDesign(.default)
                     .foregroundColor(.secondary)
             }
             

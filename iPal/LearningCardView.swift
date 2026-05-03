@@ -17,7 +17,7 @@ struct LearningCardView: View {
                     Text(card.topic.rawValue.uppercased())
                         .font(.caption)
                         .fontWeight(.bold)
-                        .fontDesign(.sans)
+                        .fontDesign(.default)
                         .foregroundColor(.secondary)
                     
                     Text(card.title)
@@ -67,7 +67,7 @@ struct LearningCardView: View {
                 Text("\(card.estimatedReadingMinutes) MIN READ")
                     .font(.caption2)
                     .fontWeight(.semibold)
-                    .fontDesign(.sans)
+                    .fontDesign(.default)
                     .foregroundColor(.secondary)
                 
                 Spacer()
@@ -76,13 +76,13 @@ struct LearningCardView: View {
                     Link(card.sourceName.uppercased(), destination: url)
                         .font(.caption2)
                         .fontWeight(.semibold)
-                        .fontDesign(.sans)
+                        .fontDesign(.default)
                         .foregroundColor(.secondary)
                 } else {
                     Text(card.sourceName.uppercased())
                         .font(.caption2)
                         .fontWeight(.semibold)
-                        .fontDesign(.sans)
+                        .fontDesign(.default)
                         .foregroundColor(.secondary)
                 }
             }
@@ -161,7 +161,7 @@ private extension LearningCardView {
                 Text(isRead ? "Read" : "Mark as Read")
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                    .fontDesign(.sans)
+                    .fontDesign(.default)
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
                     .overlay(
@@ -180,7 +180,7 @@ private extension LearningCardView {
                 }
                 .font(.subheadline)
                 .fontWeight(.semibold)
-                .fontDesign(.sans)
+                .fontDesign(.default)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
                 .background(Color.primary)

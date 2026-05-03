@@ -118,7 +118,7 @@ struct ExploreMoreView: View {
                     Button("Done") {
                         dismiss()
                     }
-                    .fontDesign(.sans)
+                    .fontDesign(.default)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 }

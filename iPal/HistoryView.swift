@@ -76,7 +76,7 @@ struct HistoryRow: View {
                 Text(card.topic.rawValue.uppercased())
                     .font(.caption2)
                     .fontWeight(.bold)
-                    .fontDesign(.sans)
+                    .fontDesign(.default)
                     .foregroundColor(.secondary)
                 
                 Spacer()
@@ -84,7 +84,7 @@ struct HistoryRow: View {
                 if let timestamp = lastMessage?.timestamp {
                     Text(timestamp, style: .date)
                         .font(.caption2)
-                        .fontDesign(.sans)
+                        .fontDesign(.default)
                         .foregroundColor(.secondary)
                 }
             }
