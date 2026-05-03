@@ -1,0 +1,122 @@
+import SwiftUI
+
+struct LearningHomeView: View {
+    
+    @StateObject private var viewModel = LearningHomeViewModel()
+    @State private var exploringCard: SummaryCard?
+    @State private var searchQuery: String = ""
+    @State private var searchedCard: SummaryCard?
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(spacing: 16) {
+                        HStack {
+                            TextField("Search for immediate knowledge (e.g. Monte Carlo)", text: $searchQuery)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            
+                            Button("Learn") {
+                                if !searchQuery.isEmpty {
+                                    searchedCard = viewModel.searchImmediateKnowledge(query: searchQuery)
+                                    searchQuery = ""
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                        
+                        if let card = searchedCard {
+                            VStack(alignment: .leading) {
+                                Text("Search Result")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal)
+                                
+                                LearningCardView(
+                                    card: card,
+                                    isSaved: viewModel.profileManager.isSaved(card),
+                                    isRead: viewModel.profileManager.profile.readCardIDs.contains(card.id),
+                                    questionCount: viewModel.questionManager.questionCount(for: card),
+                                    onFeedback: { action in
+                                        viewModel.handle(action, for: card)
+                                    },
+                                    onMarkAsRead: {
+                                        viewModel.markAsRead(card: card)
+                                    },
+                                    onExploreMore: {
+                                        exploringCard = card
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    
+                    if viewModel.isLoading {
+                        ProgressView("Curating your daily learning feed...")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                    } else {
+                        ForEach(viewModel.cards) { card in
+                            LearningCardView(
+                                card: card,
+                                isSaved: viewModel.profileManager.isSaved(card),
+                                isRead: viewModel.profileManager.profile.readCardIDs.contains(card.id),
+                                questionCount: viewModel.questionManager.questionCount(for: card),
+                                onFeedback: { action in
+                                    viewModel.handle(action, for: card)
+                                },
+                                onMarkAsRead: {
+                                    viewModel.markAsRead(card: card)
+                                },
+                                onExploreMore: {
+                                    exploringCard = card
+                                }
+                            )
+                        }
+                    }
+                }
+                .padding()
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Learn")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        viewModel.loadDailyCards()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+            }
+        }
+        .sheet(item: $viewModel.activeQuizSession) { session in
+            QuizView(session: session) { answers in
+                viewModel.completeQuiz(session: session, selectedAnswers: answers)
+            }
+        }
+        .sheet(item: $exploringCard) { card in
+            ExploreMoreView(card: card)
+        }
+        .alert("Learn", isPresented: deepDiveAlertIsPresented) {
+            Button("OK") {
+                viewModel.clearDeepDiveStatus()
+            }
+        } message: {
+            Text(viewModel.deepDiveStatusMessage ?? "")
+        }
+    }
+}
+
+private extension LearningHomeView {
+    
+    var deepDiveAlertIsPresented: Binding<Bool> {
+        Binding(
+            get: { viewModel.deepDiveStatusMessage != nil },
+            set: { newValue in
+                if !newValue {
+                    viewModel.clearDeepDiveStatus()
+                }
+            }
+        )
+    }
+}
