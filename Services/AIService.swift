@@ -2,12 +2,15 @@ import Foundation
 
 final class AIService {
     
+    private let groqEndpoint = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
+    private let groqModel = "llama-3.3-70b-versatile"
+    
     private var openRouterKey: String {
         fetchKey(named: "OpenRouterKey")
     }
     
-    private var openAIKey: String {
-        fetchKey(named: "OpenAIKey")
+    private var groqKey: String {
+        fetchKey(named: "GroqKey")
     }
     
     private func fetchKey(named name: String) -> String {
@@ -36,7 +39,7 @@ final class AIService {
             return
         }
         
-        callOpenAI(input: input, completion: completion)
+        callGroq(input: input, completion: completion)
     }
     
     func researchStory(
@@ -68,15 +71,14 @@ final class AIService {
         messages: [String],
         completion: @escaping (String, Bool) -> Void
     ) {
-        let trimmedKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedKey = groqKey.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !trimmedKey.isEmpty,
-              let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
-            completion("I'm sorry, I can't chat right now as the API key is missing.", false)
+        guard !trimmedKey.isEmpty else {
+            completion("I'm sorry, I can't chat right now as the Groq API key is missing.", false)
             return
         }
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 30
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
@@ -111,7 +113,7 @@ final class AIService {
         }
         
         let body: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": groqModel,
             "messages": apiMessages,
             "temperature": 0.7,
             "max_tokens": 500
@@ -135,10 +137,6 @@ final class AIService {
                 print("Chat request error: No data received")
                 DispatchQueue.main.async { completion("No response from server.", false) }
                 return
-            }
-            
-            if let rawString = String(data: data, encoding: .utf8) {
-                print("Chat request raw response: \(rawString)")
             }
             
             do {
@@ -167,15 +165,14 @@ final class AIService {
         query: String,
         completion: @escaping (SummaryCard?, Bool) -> Void
     ) {
-        let trimmedKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedKey = groqKey.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !trimmedKey.isEmpty,
-              let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
+        guard !trimmedKey.isEmpty else {
             completion(nil, false)
             return
         }
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 45
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
@@ -201,9 +198,9 @@ final class AIService {
         """
         
         let body: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": groqModel,
             "messages": [
-                ["role": "system", "content": "You are a research assistant that generates structured learning content."],
+                ["role": "system", "content": "You are a research assistant that generates structured learning content. You MUST return valid JSON."],
                 ["role": "user", "content": prompt]
             ],
             "response_format": ["type": "json_object"],
@@ -229,10 +226,6 @@ final class AIService {
                 print("Generate card error: No data received")
                 DispatchQueue.main.async { completion(nil, false) }
                 return
-            }
-            
-            if let rawString = String(data: data, encoding: .utf8) {
-                print("Generate card raw response: \(rawString)")
             }
             
             do {
@@ -328,7 +321,7 @@ final class AIService {
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error {
+            if let error = error {
                 print("OpenRouter request error:", error.localizedDescription)
             }
             
@@ -337,10 +330,6 @@ final class AIService {
                     completion(self.fallbackBullets(from: input), "Fallback", false)
                 }
                 return
-            }
-            
-            if let raw = String(data: data, encoding: .utf8) {
-                print("OpenRouter raw response:", raw)
             }
             
             do {
@@ -370,18 +359,17 @@ final class AIService {
         }.resume()
     }
     
-    // MARK: - Premium Summary
+    // MARK: - Groq (replacing Premium Summary/OpenAI)
     
-    private func callOpenAI(input: String, completion: @escaping ([String], String, Bool) -> Void) {
-        let trimmedKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func callGroq(input: String, completion: @escaping ([String], String, Bool) -> Void) {
+        let trimmedKey = groqKey.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !trimmedKey.isEmpty,
-              let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
-            completion(fallbackBullets(from: input), "Fallback: missing OpenAI key", false)
+        guard !trimmedKey.isEmpty else {
+            completion(fallbackBullets(from: input), "Fallback: missing Groq key", false)
             return
         }
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 35
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
@@ -410,7 +398,7 @@ final class AIService {
         """
         
         let body: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": groqModel,
             "messages": [
                 ["role": "system", "content": "You summarize articles into sharp factual bullets."],
                 ["role": "user", "content": prompt]
@@ -427,12 +415,8 @@ final class AIService {
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error {
-                print("OpenAI request error:", error.localizedDescription)
-            }
-            
-            if let http = response as? HTTPURLResponse {
-                print("OpenAI status code:", http.statusCode)
+            if let error = error {
+                print("Groq request error:", error.localizedDescription)
             }
             
             guard let data = data else {
@@ -440,10 +424,6 @@ final class AIService {
                     completion(self.fallbackBullets(from: input), "Fallback: no response data", false)
                 }
                 return
-            }
-            
-            if let raw = String(data: data, encoding: .utf8) {
-                print("OpenAI raw response:", raw)
             }
             
             do {
@@ -461,7 +441,7 @@ final class AIService {
                 DispatchQueue.main.async {
                     completion(
                         bullets.isEmpty ? self.fallbackBullets(from: input) : bullets,
-                        bullets.isEmpty ? "Fallback: empty model output" : "GPT-4o Mini",
+                        bullets.isEmpty ? "Fallback: empty model output" : "Groq Llama-3.3",
                         !bullets.isEmpty
                     )
                 }
@@ -484,18 +464,17 @@ final class AIService {
         extraGuidance: String?,
         completion: @escaping (StoryResearchPayload, String, Bool) -> Void
     ) {
-        let trimmedOpenAIKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedKey = groqKey.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !trimmedOpenAIKey.isEmpty,
-              let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
+        guard !trimmedKey.isEmpty else {
             completion(fallbackStoryPayload(topic: topic, userPrompt: userPrompt, from: researchInput, sourceReferences: sourceReferences, existingStory: existingStory), "Fallback", false)
             return
         }
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 40
-        request.setValue("Bearer \(trimmedOpenAIKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let existingStoryContext = existingStory.map { story in
@@ -574,7 +553,7 @@ final class AIService {
         """
         
         let body: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": groqModel,
             "messages": [
                 ["role": "system", "content": "You return valid JSON for verified story explainers."],
                 ["role": "user", "content": prompt]
@@ -592,8 +571,8 @@ final class AIService {
         }
         
         URLSession.shared.dataTask(with: request) { data, _, error in
-            if let error {
-                print("Story research request error:", error.localizedDescription)
+            if let error = error {
+                print("Story research request error: \(error.localizedDescription)")
             }
             
             guard let data = data else {
@@ -627,7 +606,7 @@ final class AIService {
                 )
                 
                 DispatchQueue.main.async {
-                    completion(payload, "GPT-4o Mini", true)
+                    completion(payload, "Groq Llama-3.3", true)
                 }
             } catch {
                 DispatchQueue.main.async {
@@ -645,18 +624,17 @@ final class AIService {
         userPrompt: String,
         completion: @escaping (String, String, Bool) -> Void
     ) {
-        let trimmedOpenAIKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedKey = groqKey.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !trimmedOpenAIKey.isEmpty,
-              let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
+        guard !trimmedKey.isEmpty else {
             completion(fallbackStoryTheme(from: userPrompt), "Fallback", false)
             return
         }
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: groqEndpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 20
-        request.setValue("Bearer \(trimmedOpenAIKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let prompt = """
@@ -673,7 +651,7 @@ final class AIService {
         """
         
         let body: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": groqModel,
             "messages": [
                 ["role": "system", "content": "You turn long prompts into concise story themes."],
                 ["role": "user", "content": prompt]
@@ -710,7 +688,7 @@ final class AIService {
                 let cleanedTheme = self.cleanTheme(rawTheme, fallbackPrompt: userPrompt)
                 
                 DispatchQueue.main.async {
-                    completion(cleanedTheme, "GPT-4o Mini", true)
+                    completion(cleanedTheme, "Groq Llama-3.3", true)
                 }
             } catch {
                 DispatchQueue.main.async {
